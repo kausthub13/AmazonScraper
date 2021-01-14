@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['C:\\Users\\KK\\PycharmProjects\\AmazonScraper'],
+             pathex=['C:\\Users\\Kausthub\\PycharmProjects\\AmazonScraper'],
              binaries=[],
              datas=[],
              hiddenimports=[],

@@ -83,7 +83,7 @@ def amazon_scrape(filename):
     writing_file = open(base_file_path, 'a', encoding='utf8', newline='')
     amazon_flip_writer = csv.writer(writing_file, delimiter=',')
     amazon_flip_writer.writerow(
-        ["Date", "ISBN13","Prime",'Ranking',"Buybox",'Buybox Seller','Buybox Price',"Amazon Listing"])
+        ["Date", "ISBN13","Prime",'Ranking',"Buybox",'Buybox Seller','Buybox Price',"Repro Listing"])
     writing_file.close()
     csv_file = pd.read_csv(filename)
     isbn_list = csv_file['ISBN13']
@@ -100,6 +100,7 @@ def amazon_scrape(filename):
         buybox_seller = "NA"
         buybox_price = "NA"
         prime = "Not Prime"
+        final_shipping = 0
         ## stack = [original_link]
         # curr_per_page_ratio = "NA"
         # count = 0
@@ -145,6 +146,13 @@ def amazon_scrape(filename):
                         # pages = "NA"
                         driver.get(all_reference_links.pop(0))
                         time.sleep(2)
+                        if prime != 'Prime':
+                            shipping = str(driver.find_element_by_css_selector('span[class="a-color-base buyboxShippingLabel"]').text)
+                            temp_shipping = ''
+                            for i in shipping:
+                                if i.isdigit() or i == '.':
+                                    temp_shipping += i
+                            final_shipping = float(temp_shipping)
                         the_details_id = driver.find_element_by_id('detailBullets_feature_div')
                         span_elements = the_details_id.find_elements_by_class_name('a-list-item')
                         for span_element in span_elements:
@@ -211,6 +219,7 @@ def amazon_scrape(filename):
                         #     pass
                         buybox_seller = str(seller_name.text)
                         buybox_price = str(driver.find_element_by_id('soldByThirdParty').text).replace('₹','').strip()
+                        buybox_price = float(buybox_price) + final_shipping
                         if seller_name and 'repro' in str(seller_name.text).lower():
                             curr_found = True
                             found = True
@@ -231,13 +240,14 @@ def amazon_scrape(filename):
                             try:
                                 other_sellers = driver.find_element_by_id('mbc-olp-link')
                                 a_tag = other_sellers.find_element_by_tag_name("a")
-                                href_link = a_tag.get_attribute("href")
-                                driver.get(href_link)
-                                time.sleep(2)
+                                # href_link = a_tag.get_attribute("href")
+                                a_tag.click()
+                                # driver.get(href_link)
+                                time.sleep(3)
                                 try:
                                     delay = 5
                                     WebDriverWait(driver, delay).until(EC.presence_of_element_located(
-                                        (By.CSS_SELECTOR, "span[class='a-size-medium a-text-bold']")))
+                                        (By.CSS_SELECTOR, "a[class='a-size-small a-link-normal']")))
                                 except Exception as e:
                                     with open(ntpath.basename(filename)[:-4] + "amazon_error_log.csv", 'a',
                                               newline='') as error_file:
@@ -247,7 +257,7 @@ def amazon_scrape(filename):
                                 while more_pages:
                                     more_pages = False
                                     search_results = driver.find_elements_by_css_selector(
-                                        "span[class='a-size-medium a-text-bold']")
+                                        "a[class='a-size-small a-link-normal']")
                                     seller_num = -1
                                     for search_result in search_results:
                                         seller_num += 1
