@@ -107,7 +107,7 @@ def amazon_scrape(filename):
         # page = 1
         # time.sleep(randint(1, 5))
         try:
-            driver.get('https://www.amazon.in/s?k='+current_isbn)
+            driver.get('https://www.amazon.in/s?k='+str(current_isbn))
             # driver.get(stack.pop())
             # time.sleep(3)
             # isbn_field = driver.find_element_by_id('twotabsearchtextbox')
