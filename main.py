@@ -100,6 +100,7 @@ def amazon_scrape(filename):
         buybox_seller = "NA"
         buybox_price = "NA"
         prime = "Not Prime"
+        curr_listed = "NA"
         final_shipping = 0
         ## stack = [original_link]
         # curr_per_page_ratio = "NA"
@@ -107,7 +108,11 @@ def amazon_scrape(filename):
         # page = 1
         # time.sleep(randint(1, 5))
         try:
-            driver.get('https://www.amazon.in/s?k='+str(current_isbn))
+            if current_isbn.isdigit():
+                driver.get('https://www.amazon.in/s?i=stripbooks&rh=p_66%3A'+str(current_isbn))
+            else:
+                driver.get('https://www.amazon.in/s?k=' + str(current_isbn)+ "&i=stripbooks")
+
             # driver.get(stack.pop())
             # time.sleep(3)
             # isbn_field = driver.find_element_by_id('twotabsearchtextbox')
