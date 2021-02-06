@@ -18,6 +18,7 @@ from tkinter import filedialog
 import tkinter.font as font
 import os
 import ntpath
+import sys
 
 error_occurred = False
 filename = None
@@ -27,7 +28,7 @@ flipkart_val = 0
 amazon_val = 0
 directory = None
 output_file = None
-
+global_pincode = None
 
 def UploadAction(event=None):
     global directory
@@ -76,7 +77,7 @@ def amazon_scrape(filename):
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     chrome_driver_path = r"chromedriver.exe"
     driver = webdriver.Chrome(executable_path=chrome_driver_path, options=options)
-    driver.minimize_window()
+    # driver.minimize_window()
     original_link = 'https://www.amazon.in/'
     base_name = ntpath.basename(filename)[:-4] + '_amazon_output.csv'
     base_file_path = os.path.join(output_file, base_name)
@@ -88,6 +89,7 @@ def amazon_scrape(filename):
     csv_file = pd.read_csv(filename)
     isbn_list = csv_file['ISBN13']
     line_count = 1
+    first_time = True
     for i in range(len(isbn_list)):
         found = False
         listed = "Not Listed"
@@ -152,6 +154,18 @@ def amazon_scrape(filename):
                         # pages = "NA"
                         driver.get(all_reference_links.pop(0))
                         time.sleep(2)
+                        if first_time:
+                            first_time = not first_time
+                            global global_pincode
+                            pincode_label = driver.find_element_by_id('contextualIngressPtLabel')
+                            pincode_label.click()
+                            time.sleep(2)
+                            pin_apply_id = driver.find_element_by_id('GLUXZipInputSection')
+                            pincode_input = driver.find_element_by_css_selector("input[class='GLUX_Full_Width a-declarative']")
+                            pincode_input.send_keys(global_pincode)
+                            pincode_submit = pin_apply_id.find_element_by_class_name('a-button-input')
+                            pincode_submit.click()
+                            time.sleep(2)
                         if prime != 'Prime':
                             shipping = str(driver.find_element_by_css_selector('span[class="a-color-base buyboxShippingLabel"]').text)
                             temp_shipping = ''
@@ -408,15 +422,28 @@ def setup_ui():
     global total_lines
     global flipkart_val
     global amazon_val
+    global global_pincode
+
+    def Take_input():
+        global global_pincode
+        global_pincode = int(pincode.get("1.0", "end-1c"))
+
     root = tk.Tk()
     root.geometry("600x200")
-    root.title("Select Your Folder To Check Whether The Titles are Listed in Amazon and Flipkart")
+    root.title("Select Your Folder To Check Whether The Titles are Listed in Amazon")
     select = tk.Label(root)
     select.pack()
     myFont = font.Font(size=20)
     button = tk.Button(root, bg='yellow', text='Select Folder', command=UploadAction, font=myFont)
     button.configure(width=600, height=2)
     button.pack()
+    pincode = tk.Text(root, height=2,
+                    width=10,
+                    bg="light yellow")
+    pincode.pack()
+    save = tk.Button(root,bg='yellow',text='Save PinCode',command=lambda :Take_input())
+    save.configure(width=600,height=2)
+    save.pack()
     label = tk.Label(root)
     label.pack()
 
