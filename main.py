@@ -110,7 +110,13 @@ def amazon_scrape(filename):
         # page = 1
         # time.sleep(randint(1, 5))
         try:
-            if current_isbn.isdigit():
+            is_isbn = True
+            for i in current_isbn:
+                if not i.isdigit() and i!='.':
+                    is_isbn=False
+                    break
+            if is_isbn:
+                current_isbn = int(float(current_isbn))
                 driver.get('https://www.amazon.in/s?i=stripbooks&rh=p_66%3A'+str(current_isbn))
             else:
                 driver.get('https://www.amazon.in/s?k=' + str(current_isbn)+ "&i=stripbooks")
