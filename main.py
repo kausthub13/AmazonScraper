@@ -117,6 +117,7 @@ def amazon_scrape(filename):
             # time.sleep(3)
             # isbn_field = driver.find_element_by_id('twotabsearchtextbox')
             if True:
+
             #     isbn_field.send_keys(str(current_isbn))
             #     isbn_field.send_keys(Keys.RETURN)
             #
