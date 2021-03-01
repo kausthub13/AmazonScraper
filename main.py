@@ -84,7 +84,8 @@ def amazon_scrape(filename):
     writing_file = open(base_file_path, 'a', encoding='utf8', newline='')
     amazon_flip_writer = csv.writer(writing_file, delimiter=',')
     amazon_flip_writer.writerow(
-        ["Date", "ISBN13","Prime",'Ranking',"Buybox",'Buybox Seller','Buybox Price',"Repro Listing"])
+        ["Date", "ISBN13",'Cover Type',"Prime",'Ranking',"Buybox",'Buybox Seller','Buybox Price',"Repro Listing"])
+    print("Date", "ISBN13",'Cover Type',"Prime",'Ranking',"Buybox",'Buybox Seller','Buybox Price',"Repro Listing")
     writing_file.close()
     csv_file = pd.read_csv(filename)
     isbn_list = csv_file['ISBN13']
@@ -143,14 +144,18 @@ def amazon_scrape(filename):
                 all_reference_links = []
                 for search_result in search_results:
                     link = search_result.get_attribute("href")
-                    if 'Paperback' in search_result.text or 'Hardcover' in search_result.text:
-                        all_reference_links.append(link)
+                    if 'Paperback' in search_result.text:
+                        all_reference_links.append([link,'Paperback'])
+                    if 'Hardcover' in search_result.text:
+                        all_reference_links.append(link,'Hardcover')
                 other_results = driver.find_elements_by_css_selector(
                     "a[class='a-size-base a-link-normal a-text-bold']")
                 for other_result in other_results:
                     link = other_result.get_attribute("href")
-                    if 'Paperback' in other_result.text or 'Hardcover' in other_result.text:
-                        all_reference_links.append(link)
+                    if 'Paperback' in other_result.text:
+                        all_reference_links.append([link,'Paperback'])
+                    if 'Hardcover' in other_result.text:
+                        all_reference_links.append([link,'Hardcover'])
                 first_link = True
                 while all_reference_links:
                     try:
@@ -158,7 +163,9 @@ def amazon_scrape(filename):
                         curr_listed = "Not Listed"
                         # price_tag = "NA"
                         # pages = "NA"
-                        driver.get(all_reference_links.pop(0))
+                        link_cover = all_reference_links.pop(0)
+                        cover_type = link_cover[1]
+                        driver.get(link_cover[0])
                         time.sleep(2)
                         if first_time:
                             first_time = not first_time
@@ -244,8 +251,8 @@ def amazon_scrape(filename):
                         # except:
                         #     pass
                         buybox_seller = str(seller_name.text)
-                        buybox_price = str(driver.find_element_by_id('soldByThirdParty').text).replace('₹','').strip()
-                        buybox_price = float(buybox_price) + final_shipping
+                        buybox_price = str(driver.find_element_by_id('soldByThirdParty').text).replace('₹','').replace(',','').strip()
+                        buybox_price = float(buybox_price) + float(final_shipping)
                         if seller_name and 'repro' in str(seller_name.text).lower():
                             curr_found = True
                             found = True
@@ -259,9 +266,9 @@ def amazon_scrape(filename):
                             writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
                             amazon_flip_writer = csv.writer(writing_file, delimiter=',')
                             amazon_flip_writer.writerow(
-                                [date.today(), current_isbn] + [prime,rank,buybox,buybox_seller,buybox_price,curr_listed])
+                                [date.today(), current_isbn] + [cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed])
                             writing_file.close()
-                            print(str(line_count) + "/" + str(total_lines), "Amazon", current_isbn,prime,rank,buybox,buybox_seller,buybox_price,curr_listed)
+                            print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed)
                         else:
                             try:
                                 other_sellers = driver.find_element_by_id('mbc-olp-link')
@@ -312,10 +319,10 @@ def amazon_scrape(filename):
                                         writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
                                         amazon_flip_writer = csv.writer(writing_file, delimiter=',')
                                         amazon_flip_writer.writerow(
-                                            [date.today(), current_isbn] + [prime, rank, buybox, buybox_seller,
+                                            [date.today(), current_isbn] + [cover_type,prime, rank, buybox, buybox_seller,
                                                                             buybox_price, curr_listed])
                                         writing_file.close()
-                                        print(str(line_count) + "/" + str(total_lines), "Amazon", current_isbn, prime,
+                                        print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type, prime,
                                               rank, buybox, buybox_seller, buybox_price,curr_listed)
                                     try:
                                         next_button = driver.find_element_by_css_selector('li[class="a-last"]')
@@ -381,10 +388,10 @@ def amazon_scrape(filename):
                                             writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
                                             amazon_flip_writer = csv.writer(writing_file, delimiter=',')
                                             amazon_flip_writer.writerow(
-                                                [date.today(), current_isbn] + [prime, rank, buybox, buybox_seller,
+                                                [date.today(), current_isbn] + [cover_type,prime, rank, buybox, buybox_seller,
                                                                                 buybox_price, curr_listed])
                                             writing_file.close()
-                                            print(str(line_count) + "/" + str(total_lines), "Amazon", current_isbn,
+                                            print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type,
                                                   prime, rank, buybox, buybox_seller, buybox_price,curr_listed)
                                         try:
                                             next_button = driver.find_element_by_css_selector('li[class="a-last"]')
@@ -412,9 +419,9 @@ def amazon_scrape(filename):
             writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
             amazon_flip_writer = csv.writer(writing_file, delimiter=',')
             amazon_flip_writer.writerow(
-                [date.today(), current_isbn] + [prime, rank, buybox, buybox_seller, buybox_price, curr_listed])
+                [date.today(), current_isbn] + [cover_type,prime, rank, buybox, buybox_seller, buybox_price, curr_listed])
             writing_file.close()
-            print(str(line_count) + "/" + str(total_lines), "Amazon", current_isbn, prime, rank, buybox, buybox_seller,
+            print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type, prime, rank, buybox, buybox_seller,
                   buybox_price,"Not Listed")
         line_count += 1
     driver.close()
@@ -433,9 +440,10 @@ def setup_ui():
     def Take_input():
         global global_pincode
         global_pincode = int(pincode.get("1.0", "end-1c"))
+        pincode_success.config(text="Pincode Saved Successfully:"+str(global_pincode))
 
     root = tk.Tk()
-    root.geometry("600x200")
+    root.geometry("600x250")
     root.title("Select Your Folder To Check Whether The Titles are Listed in Amazon")
     select = tk.Label(root)
     select.pack()
@@ -443,10 +451,15 @@ def setup_ui():
     button = tk.Button(root, bg='yellow', text='Select Folder', command=UploadAction, font=myFont)
     button.configure(width=600, height=2)
     button.pack()
+    pincode_label = tk.Label(root)
+    pincode_label.config(text="Enter Pincode in the text box below and then press Save Pincode Button")
+    pincode_label.pack()
     pincode = tk.Text(root, height=2,
                     width=10,
                     bg="light yellow")
     pincode.pack()
+    pincode_success = tk.Label(root)
+    pincode_success.pack()
     save = tk.Button(root,bg='yellow',text='Save PinCode',command=lambda :Take_input())
     save.configure(width=600,height=2)
     save.pack()
@@ -455,7 +468,11 @@ def setup_ui():
 
     def task():
         if directory:
-            select.config(text="You have successfully selected the folder you can now close this window")
+            if global_pincode:
+                select.config(
+                    text="You have successfully selected the folder and pincode you can now close this window")
+            else:
+                select.config(text="PLEASE ENTER PINCODE BEFORE CLOSING THE WINDOW")
             label.config(text="Current Selected Folder Path: " + str(directory))
         root.after(1000, task)
 
