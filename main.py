@@ -104,6 +104,7 @@ def amazon_scrape(filename):
         buybox_price = "NA"
         prime = "Not Prime"
         curr_listed = "NA"
+        cover_type= "NA"
         final_shipping = 0
         ## stack = [original_link]
         # curr_per_page_ratio = "NA"
