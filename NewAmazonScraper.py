@@ -157,6 +157,7 @@ class AmazonScraper():
         self.isISBN = True
         self.amazonSearchLink = None
 
+
     def CheckISBN(self):
         for i in self.currentISBN:
             if not i.isdigit() and i != '.':
@@ -247,13 +248,14 @@ class AmazonScraper():
 
     def GetCurrentLink(self):
         for currLink in self.allISBNLinks:
+            self.resetISBNValues()
             self.driver.get(currLink[0])
             self.coverType = currLink[1]
             time.sleep(2)
             if self.firstLink:
                 self.SetPincode()
                 self.firstLink = False
-            if not self.prime:
+            if self.prime == 'Not Prime':
                 self.GetShippingPrice()
             self.GetISBNRanking()
             self.GetISBNNumber()
@@ -279,6 +281,7 @@ class AmazonScraper():
 
     def CheckReproInMoreBuyingOptions(self):
         if self.otherSeller:
+            # time.sleep(2)
             loadSidePanel = self.otherSeller.find_element_by_tag_name('a')
             loadSidePanel.click()
             time.sleep(3)
