@@ -73,6 +73,7 @@ def amazon_scrape(filename):
     binding = "NA"
     per_page_ratio = "NA"
     # options.add_argument('headless')
+    options = Options()
     options.add_argument('--no-sandbox')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     chrome_driver_path = r"chromedriver.exe"
@@ -148,7 +149,7 @@ def amazon_scrape(filename):
                     if 'Paperback' in search_result.text:
                         all_reference_links.append([link,'Paperback'])
                     if 'Hardcover' in search_result.text:
-                        all_reference_links.append(link,'Hardcover')
+                        all_reference_links.append([link,'Hardcover'])
                 other_results = driver.find_elements_by_css_selector(
                     "a[class='a-size-base a-link-normal a-text-bold']")
                 for other_result in other_results:
@@ -181,12 +182,31 @@ def amazon_scrape(filename):
                             pincode_submit.click()
                             time.sleep(2)
                         if prime != 'Prime':
-                            shipping = str(driver.find_element_by_css_selector('span[class="a-color-base buyboxShippingLabel"]').text)
                             temp_shipping = ''
-                            for i in shipping:
-                                if i.isdigit() or i == '.':
-                                    temp_shipping += i
-                            final_shipping = float(temp_shipping)
+                            try:
+                                shipping = str(driver.find_element_by_css_selector('span[class="a-color-base buyboxShippingLabel"]').text)
+
+                                for i in shipping:
+                                    if i.isdigit() or i == '.':
+                                        temp_shipping += i
+                            except:
+                                pass
+                            if temp_shipping:
+                                final_shipping = float(temp_shipping)
+                            else:
+                                try:
+                                    delivery_charge_id = driver.find_element_by_id('ddmDeliveryMessage')
+                                    delivery_charge_text = str(delivery_charge_id.find_element_by_tag_name('a').text)
+                                    delivery_price = ''
+                                    for i in delivery_charge_text:
+                                        if i.isdigit() or i=='.':
+                                            delivery_price += i
+                                    if delivery_price:
+                                        final_shipping = float(delivery_price)
+                                except:
+                                    pass
+                                if not final_shipping:
+                                    final_shipping = 0
                         the_details_id = driver.find_element_by_id('detailBullets_feature_div')
                         span_elements = the_details_id.find_elements_by_class_name('a-list-item')
                         for span_element in span_elements:
@@ -228,6 +248,7 @@ def amazon_scrape(filename):
                             with open(ntpath.basename(filename)[:-4]+"amazon_error_log.csv", 'a',newline='') as error_file:
                                 error_writer = csv.writer(error_file)
                                 error_writer.writerow(['Amazon', current_isbn])
+
                         # try:
                         #     mrp_prices = driver.find_elements_by_class_name('a-list-item')
                         #     for mrp_price in mrp_prices:
@@ -251,28 +272,34 @@ def amazon_scrape(filename):
                         #     curr_per_page_ratio = round(float(price_tag) / float(pages), 2)
                         # except:
                         #     pass
-                        buybox_seller = str(seller_name.text)
-                        buybox_price = str(driver.find_element_by_id('soldByThirdParty').text).replace('₹','').replace(',','').strip()
-                        buybox_price = float(buybox_price) + float(final_shipping)
-                        if seller_name and 'repro' in str(seller_name.text).lower():
-                            curr_found = True
-                            found = True
-                            buybox = "Yes"
-                            if curr_found:
-                                curr_listed = 'Listed'
-                            # selling_price = None
+                        if seller_name:
+                            buybox_seller = str(seller_name.text)
+                            buybox_price = str(driver.find_element_by_id('soldByThirdParty').text).replace('₹','').replace(',','').strip()
+                            buybox_price = float(buybox_price) + float(final_shipping)
+                        if seller_name:
+                            if 'repro' in str(seller_name.text).lower():
+                                curr_found = True
+                                found = True
+                                buybox = "Yes"
+                                if curr_found:
+                                    curr_listed = 'Listed'
+                                # selling_price = None
 
-                            base_name = ntpath.basename(filename)[:-4] + '_amazon_output.csv'
-                            base_file_path = os.path.join(output_file, base_name)
-                            writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
-                            amazon_flip_writer = csv.writer(writing_file, delimiter=',')
-                            amazon_flip_writer.writerow(
-                                [date.today(), current_isbn] + [cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed])
-                            writing_file.close()
-                            print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed)
+                                base_name = ntpath.basename(filename)[:-4] + '_amazon_output.csv'
+                                base_file_path = os.path.join(output_file, base_name)
+                                writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')
+                                amazon_flip_writer = csv.writer(writing_file, delimiter=',')
+                                amazon_flip_writer.writerow(
+                                    [date.today(), current_isbn] + [cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed])
+                                writing_file.close()
+                                print(str(line_count) + "/" + str(total_lines), current_isbn,cover_type,prime,rank,buybox,buybox_seller,buybox_price,curr_listed)
                         else:
-                            try:
+                            if seller_name:
                                 other_sellers = driver.find_element_by_id('mbc-olp-link')
+                            else:
+                                other_sellers = driver.find_element_by_id('buybox-see-all-buying-choices')
+                            try:
+
                                 a_tag = other_sellers.find_element_by_tag_name("a")
                                 # href_link = a_tag.get_attribute("href")
                                 a_tag.click()
@@ -287,6 +314,27 @@ def amazon_scrape(filename):
                                               newline='') as error_file:
                                         error_writer = csv.writer(error_file)
                                         error_writer.writerow(['Amazon', current_isbn])
+
+                                # last_height = driver.execute_script("return document.body.scrollHeight")
+                                # while True:
+                                #     # Scroll down to bottom
+                                #     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                                #
+                                #     # Wait to load page
+                                #     time.sleep(3)
+                                #
+                                #     # Calculate new scroll height and compare with last scroll height
+                                #     new_height = driver.execute_script("return document.body.scrollHeight")
+                                #     if new_height == last_height:
+                                #         break
+                                #     last_height = new_height
+                                # extension = driver.find_element_by_id('all-offers-display')
+                                # driver.execute_script('window.scrollTo(0,1080)')
+                                # ext2 = driver.switch_to.active_element
+                                # ext2.send_keys(Keys.PAGE_DOWN)
+                                # extension.click()
+                                # extension.clear()
+                                # extension.send_keys(Keys.PAGE_DOWN)
                                 more_pages = True
                                 while more_pages:
                                     more_pages = False
@@ -299,22 +347,10 @@ def amazon_scrape(filename):
                                         if 'repro' in str(seller_name).lower():
                                             curr_found = True
                                             curr_listed = 'Listed'
+
                                             found = True
                                             break
-                                    # selling_prices = driver.find_elements_by_css_selector("span[class='a-size-large a-color-price olpOfferPrice a-text-bold']")
                                     if curr_found:
-                                        #     curr_sell_num = -1
-                                        #     for selling_price in selling_prices:
-                                        #         curr_sell_num += 1
-                                        #         if curr_sell_num == seller_num:
-                                        #             price_tag = selling_price.text
-                                        #             break
-                                        #     pages = pages.replace('pages', '').replace('Pages', '').strip()
-                                        #     price_tag = price_tag.replace('₹', '').strip()
-                                        #     try:
-                                        #         curr_per_page_ratio = round(float(price_tag) / float(pages),2)
-                                        #     except:
-                                        #         pass
                                         base_name = ntpath.basename(filename)[:-4] + '_amazon_output.csv'
                                         base_file_path = os.path.join(output_file, base_name)
                                         writing_file = open(base_file_path, 'a', encoding="utf-8", newline='')

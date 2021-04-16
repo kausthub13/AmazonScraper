@@ -174,7 +174,7 @@ class AmazonScraper():
                 pass
 
     def CreateOutputFileName(self, filename):
-        self.outputFile = os.path.join(self.outputDirectory, ntpath.basename(filename))
+        self.outputFile = os.path.join(self.outputDirectory, ntpath.basename(filename[:-5] + '_amazon_output.xlsx'))
 
     def CreateOutputFile(self, filename):
         self.CreateOutputFileName(filename)
