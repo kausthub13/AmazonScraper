@@ -143,6 +143,7 @@ class AmazonScraper():
         self.firstLink = True
         self.outputFile = None
         self.bookCode = None
+        self.pages = 'NA'
 
     def resetISBNValues(self):
         self.coverType = None
@@ -156,6 +157,7 @@ class AmazonScraper():
         self.reproListing = None
         self.isISBN = True
         self.amazonSearchLink = None
+        self.pages = 'NA'
 
 
     def CheckISBN(self):
@@ -179,8 +181,8 @@ class AmazonScraper():
     def CreateOutputFile(self, filename):
         self.CreateOutputFileName(filename)
         if not os.path.exists(self.outputFile):
-            headers_row = ["Date", "ISBN13", 'Cover Type', "Prime", 'Ranking', "Buybox", 'Buybox Seller',
-                           'Buybox Price', "Repro Listing"]
+            headers_row = ["Date", 'Book Code',"ISBN13", 'Cover Type', "Prime", 'Ranking', "Buybox", 'Buybox Seller',
+                           'Buybox Price', "Repro Listing",'Pages']
             output_workbook = Workbook()
             output_worksheet = output_workbook.active
             output_worksheet.append(headers_row)
@@ -248,24 +250,29 @@ class AmazonScraper():
 
     def GetCurrentLink(self):
         for currLink in self.allISBNLinks:
-            self.resetISBNValues()
-            self.driver.get(currLink[0])
-            self.coverType = currLink[1]
-            time.sleep(2)
-            if self.firstLink:
-                self.SetPincode()
-                self.firstLink = False
-            if self.prime == 'Not Prime':
-                self.GetShippingPrice()
-            self.GetISBNRanking()
-            self.GetISBNNumber()
-            self.GetBuyboxSeller()
-            self.CheckReproBuyboxSeller()
-            if self.buybox != 'Yes':
-                self.GetOtherBuyingOptionElement()
-                self.CheckReproInMoreBuyingOptions()
-            self.WriteRecord()
-            self.GetISBNValues()
+            try:
+                self.resetISBNValues()
+                self.driver.get(currLink[0])
+                self.coverType = currLink[1]
+                time.sleep(2)
+                if self.firstLink:
+                    self.SetPincode()
+                    self.firstLink = False
+                if self.prime == 'Not Prime':
+                    self.GetShippingPrice()
+                self.GetISBNRanking()
+                self.GetISBNNumber()
+                self.GetPages()
+                self.GetBuyboxSeller()
+                self.CheckReproBuyboxSeller()
+                if self.buybox != 'Yes':
+                    self.GetOtherBuyingOptionElement()
+                    self.CheckReproInMoreBuyingOptions()
+                self.WriteRecord()
+                self.GetISBNValues()
+            except:
+                pass
+
 
     def GetOtherBuyingOptionElement(self):
         if self.buybox == 'No':
@@ -331,6 +338,21 @@ class AmazonScraper():
         else:
             self.ranking = "NA"
 
+    def GetPages(self):
+        the_details_id = self.driver.find_element_by_id('detailBullets_feature_div')
+        span_elements = the_details_id.find_elements_by_class_name('a-list-item')
+        pages = ''
+        for span_element in span_elements:
+            if 'pages' in span_element.text:
+                for i in span_element.text:
+                    if i.isdigit():
+                        pages += i
+                break
+        if pages:
+            self.pages = pages
+        else:
+            self.pages = "NA"
+
     def SetPincode(self):
         pincodeLabel = self.driver.find_element_by_id('contextualIngressPtLabel')
         pincodeLabel.click()
@@ -348,7 +370,7 @@ class AmazonScraper():
             self.bookCode) + ', Cover Type : ' + self.coverType + ', Prime : ' + str(self.prime) + ', Ranking : ' + str(
             self.ranking) + ', Buybox : ' + str(self.buybox) + ', Buybox Seller : ' +
               str(self.buyboxSeller) + ', Buybox Price : ' + str(self.buyboxPrice) + ', Repro Listing : ' + str(
-            self.reproListing))
+            self.reproListing)  + ', Pages : ' + self.pages)
 
     def OpenAmazonPage(self):
         self.driver.get(self.amazonSearchLink)
@@ -413,7 +435,7 @@ class AmazonScraper():
             headers_row = [self.date, self.bookCode, self.currentISBN, self.coverType, self.prime, self.ranking,
                            self.buybox,
                            self.buyboxSeller,
-                           self.buyboxPrice, self.reproListing]
+                           self.buyboxPrice, self.reproListing,self.pages]
             output_workbook = load_workbook(self.outputFile)
             output_worksheet = output_workbook.worksheets[0]
             output_worksheet.append(headers_row)
